@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "m365-teams": {
+      "command": "python",
+      "args": ["-m", "mcp_m365_teams.server"],
+      "env": {
+        "M365_TENANT_ID": "your-tenant-id",
+        "M365_CLIENT_ID": "your-client-id",
+        "M365_CLIENT_SECRET": "your-client-secret"
+      }
+    }
+  }
+}
