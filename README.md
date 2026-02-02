@@ -2,6 +2,8 @@
 
 A Model Context Protocol (MCP) server that provides integration with Microsoft 365 Teams. This server enables AI assistants and other MCP clients to interact with Microsoft Teams through a standardized interface.
 
+> **🚀 Quick Start**: New to this project? Check out the [Quick Start Guide](docs/QUICKSTART.md) to get up and running in 5 minutes!
+
 ## Features
 
 - **List Teams**: Get all teams the user is a member of
@@ -11,6 +13,14 @@ A Model Context Protocol (MCP) server that provides integration with Microsoft 3
 - **Member Management**: Add members to teams with specific roles
 - **Presence Information**: Get user availability and presence status
 - **Message Search**: Search for messages across all teams
+
+## Documentation
+
+- 📖 [Quick Start Guide](docs/QUICKSTART.md) - Get started in 5 minutes
+- 🔧 [Azure AD Setup Guide](docs/AZURE_SETUP.md) - Detailed Azure configuration
+- 💡 [Usage Examples](examples/usage_examples.md) - Practical examples and workflows
+- 🔒 [Security Policy](SECURITY.md) - Security best practices
+- 🤝 [Contributing Guide](CONTRIBUTING.md) - How to contribute
 
 ## Installation
 
@@ -28,66 +38,37 @@ cd mcp-m365-teams
 pip install -e .
 ```
 
-## Prerequisites
+## Quick Setup
 
-Before using this MCP server, you need to:
+1. **Register Azure AD App** - [Detailed guide](docs/AZURE_SETUP.md)
+2. **Set Environment Variables**:
+   ```bash
+   export M365_TENANT_ID="your-tenant-id"
+   export M365_CLIENT_ID="your-client-id"
+   export M365_CLIENT_SECRET="your-client-secret"
+   ```
+3. **Run the Server**:
+   ```bash
+   mcp-m365-teams
+   ```
 
-1. **Register an Azure AD Application**:
-   - Go to [Azure Portal](https://portal.azure.com)
-   - Navigate to "Azure Active Directory" > "App registrations"
-   - Click "New registration"
-   - Give it a name (e.g., "MCP Teams Integration")
-   - Choose supported account types
-   - Click "Register"
+For detailed setup instructions, see the [Quick Start Guide](docs/QUICKSTART.md).
 
-2. **Configure API Permissions**:
-   - In your app registration, go to "API permissions"
-   - Add the following Microsoft Graph permissions:
-     - `Team.ReadBasic.All` - Read basic team info
-     - `Channel.ReadBasic.All` - Read channel info
-     - `ChannelMessage.Read.All` - Read channel messages
-     - `ChannelMessage.Send` - Send channel messages
-     - `TeamMember.ReadWrite.All` - Manage team members
-     - `Presence.Read.All` - Read user presence
-   - Grant admin consent for your organization
+## Configuration with MCP Clients
 
-3. **Create a Client Secret**:
-   - Go to "Certificates & secrets"
-   - Click "New client secret"
-   - Add a description and set expiration
-   - Copy the secret value (you won't be able to see it again!)
+### Claude Desktop
 
-4. **Set Environment Variables**:
+Add to your Claude Desktop config:
 
-```bash
-export M365_TENANT_ID="your-tenant-id"
-export M365_CLIENT_ID="your-client-id"
-export M365_CLIENT_SECRET="your-client-secret"
-```
-
-## Usage
-
-### Running the Server
-
-```bash
-mcp-m365-teams
-```
-
-Or using Python:
-
-```bash
-python -m mcp_m365_teams.server
-```
-
-### Configuration with MCP Clients
-
-Add to your MCP client configuration (e.g., Claude Desktop):
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "m365-teams": {
-      "command": "mcp-m365-teams",
+      "command": "python",
+      "args": ["-m", "mcp_m365_teams.server"],
       "env": {
         "M365_TENANT_ID": "your-tenant-id",
         "M365_CLIENT_ID": "your-client-id",
@@ -98,110 +79,98 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 }
 ```
 
-Or with uvx:
+### Other MCP Clients
 
-```json
-{
-  "mcpServers": {
-    "m365-teams": {
-      "command": "uvx",
-      "args": ["mcp-m365-teams"],
-      "env": {
-        "M365_TENANT_ID": "your-tenant-id",
-        "M365_CLIENT_ID": "your-client-id",
-        "M365_CLIENT_SECRET": "your-client-secret"
-      }
-    }
-  }
-}
-```
+For other MCP clients, use:
+- **Command**: `python -m mcp_m365_teams.server`
+- **Environment**: Set the three M365 variables
 
 ## Available Tools
 
-### list_teams
-List all teams the authenticated user is a member of.
+| Tool | Description |
+|------|-------------|
+| `list_teams` | List all teams the user is a member of |
+| `get_team_channels` | Get all channels in a specific team |
+| `send_channel_message` | Send a message to a Teams channel |
+| `get_channel_messages` | Get recent messages from a channel |
+| `create_team` | Create a new Microsoft Team |
+| `add_team_member` | Add a member to a team |
+| `create_channel` | Create a new channel in a team |
+| `get_user_presence` | Get user presence/availability status |
+| `search_messages` | Search for messages across all teams |
 
-**Parameters**: None
+For detailed tool documentation and examples, see [Usage Examples](examples/usage_examples.md).
 
-**Example Response**:
-```json
-{
-  "teams": [
-    {
-      "id": "team-id-123",
-      "display_name": "Engineering Team",
-      "description": "Engineering department team"
-    }
-  ],
-  "count": 1
-}
+## Example Usage
+
+### With an AI Assistant (e.g., Claude)
+
+> **User**: "Can you send a message to the Engineering team's General channel saying 'Deployment complete'?"
+
+> **Assistant**: I'll send that message for you.
+> 
+> *[Uses list_teams → get_team_channels → send_channel_message]*
+> 
+> ✅ Message sent to Engineering > General: "Deployment complete"
+
+### Programmatic Usage
+
+```python
+# See examples/usage_examples.md for detailed code examples
 ```
 
-### get_team_channels
-Get all channels in a specific team.
+## Architecture
 
-**Parameters**:
-- `team_id` (string, required): The ID of the team
+```
+┌─────────────────┐
+│   MCP Client    │
+│ (Claude, etc.)  │
+└────────┬────────┘
+         │ MCP Protocol
+         │
+┌────────▼────────┐
+│  MCP M365 Teams │
+│     Server      │
+└────────┬────────┘
+         │ Microsoft Graph API
+         │
+┌────────▼────────┐
+│  Microsoft 365  │
+│     Teams       │
+└─────────────────┘
+```
 
-### send_channel_message
-Send a message to a Teams channel.
+## Prerequisites
 
-**Parameters**:
-- `team_id` (string, required): The ID of the team
-- `channel_id` (string, required): The ID of the channel
-- `message` (string, required): The message content
+- Python 3.10 or higher
+- Microsoft 365 account with Teams
+- Azure AD admin access (for app registration)
 
-### get_channel_messages
-Get recent messages from a Teams channel.
+### Required Azure AD Permissions
 
-**Parameters**:
-- `team_id` (string, required): The ID of the team
-- `channel_id` (string, required): The ID of the channel
-- `limit` (integer, optional): Maximum number of messages to retrieve (default: 10)
+The following Microsoft Graph API permissions are required:
 
-### create_team
-Create a new Microsoft Team.
+| Permission | Type | Reason |
+|------------|------|--------|
+| `Team.ReadBasic.All` | Application | Read team information |
+| `Channel.ReadBasic.All` | Application | Read channel information |
+| `ChannelMessage.Read.All` | Application | Read channel messages |
+| `ChannelMessage.Send` | Application | Send messages to channels |
+| `TeamMember.ReadWrite.All` | Application | Manage team members |
+| `User.Read.All` | Application | Read user information |
+| `Presence.Read.All` | Application | Read user presence |
 
-**Parameters**:
-- `display_name` (string, required): The name of the team
-- `description` (string, optional): Description of the team
+See the [Azure Setup Guide](docs/AZURE_SETUP.md) for detailed configuration instructions.
 
-### add_team_member
-Add a member to a team.
+## Security
 
-**Parameters**:
-- `team_id` (string, required): The ID of the team
-- `user_email` (string, required): Email address of the user to add
-- `role` (string, optional): Role - 'owner' or 'member' (default: 'member')
+- 🔒 Never commit credentials to version control
+- 🔐 Use environment variables or secret managers
+- 🔄 Rotate client secrets regularly (every 90 days)
+- 👮 Apply principle of least privilege
+- 📊 Monitor API usage and set up alerts
 
-### create_channel
-Create a new channel in a team.
-
-**Parameters**:
-- `team_id` (string, required): The ID of the team
-- `display_name` (string, required): The name of the channel
-- `description` (string, optional): Description of the channel
-
-### get_user_presence
-Get presence information for a user.
-
-**Parameters**:
-- `user_email` (string, required): Email address of the user
-
-### search_messages
-Search for messages across all teams.
-
-**Parameters**:
-- `query` (string, required): Search query
-- `limit` (integer, optional): Maximum number of results (default: 10)
-
-## Security Considerations
-
-- Store credentials securely (use environment variables or a secrets manager)
-- Never commit credentials to version control
-- Use the principle of least privilege when configuring API permissions
-- Regularly rotate client secrets
-- Monitor API usage and set up alerts for unusual activity
+For comprehensive security guidance, see [SECURITY.md](SECURITY.md).
 
 ## Development
 
@@ -213,45 +182,40 @@ cd mcp-m365-teams
 pip install -e ".[dev]"
 ```
 
-### Running Tests
+### Run Tests
 
 ```bash
-pytest
+pytest                    # Run all tests
+pytest --cov             # Run with coverage
 ```
 
-### Code Formatting
+### Code Quality
 
 ```bash
-black src/
-ruff check src/
+black src/ tests/        # Format code
+ruff check src/ tests/   # Lint code
+mypy src/                # Type checking
 ```
 
 ## Troubleshooting
 
-### Authentication Errors
+| Issue | Solution |
+|-------|----------|
+| "Insufficient privileges" | Ensure admin consent is granted in Azure AD |
+| "Authentication failed" | Verify all three credentials are correct |
+| "Resource not found" | Check you have access to the teams/channels |
 
-If you encounter authentication errors:
-1. Verify your environment variables are set correctly
-2. Check that your Azure AD app has the correct permissions
-3. Ensure admin consent has been granted
-4. Verify the client secret hasn't expired
-
-### Permission Errors
-
-If you get permission denied errors:
-1. Check the API permissions in Azure AD
-2. Ensure admin consent is granted
-3. Verify the user has access to the teams/channels
+For more help, see [Troubleshooting](docs/AZURE_SETUP.md#troubleshooting) or [open an issue](https://github.com/chad-atexpedient/mcp-m365-teams/issues).
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
 
 ## License
 
@@ -262,20 +226,33 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Model Context Protocol Documentation](https://modelcontextprotocol.io)
 - [Microsoft Graph API Documentation](https://learn.microsoft.com/en-us/graph/overview)
 - [Microsoft Teams API Reference](https://learn.microsoft.com/en-us/graph/api/resources/teams-api-overview)
+- [Azure AD Best Practices](https://learn.microsoft.com/en-us/azure/active-directory/develop/identity-platform-integration-checklist)
 
 ## Support
 
-For issues and questions:
-- Open an issue on [GitHub](https://github.com/chad-atexpedient/mcp-m365-teams/issues)
-- Check existing issues for solutions
+- 📫 [Open an issue](https://github.com/chad-atexpedient/mcp-m365-teams/issues) for bugs or feature requests
+- 💬 Check [existing issues](https://github.com/chad-atexpedient/mcp-m365-teams/issues) for solutions
+- 📚 Read the [documentation](docs/) for detailed guides
+
+## Roadmap
+
+Future enhancements planned:
+
+- [ ] Support for Teams meetings
+- [ ] File sharing capabilities
+- [ ] Tab management
+- [ ] Calendar integration
+- [ ] Webhooks support
+- [ ] Adaptive Cards support
 
 ## Changelog
 
-### v0.1.0 (Initial Release)
-- Basic Teams integration
-- Channel management
-- Message sending and retrieval
-- Team creation
-- Member management
-- Presence information
-- Message search
+See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
+
+## Star History
+
+If you find this project useful, please consider giving it a ⭐!
+
+---
+
+**Made with ❤️ for the MCP community**
